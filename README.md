@@ -5,9 +5,9 @@ Toolkit for combining **Spatial Transcriptomics** with **Perturb-seq** workflows
 ## Install
 
 ```bash
-pip install spatialperturb
+pip install SpatialPerturb
 # or with GNN extras:
-pip install 'spatialperturb[gnn]'
+pip install 'SpatialPerturb[gnn]'
 ```
 
 ## Quick start
@@ -20,7 +20,7 @@ print(sp.__version__)
 
 CLI:
 ```bash
-spatialperturb version
+SpatialPerturb version
 ```
 
 ## Development
