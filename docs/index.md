@@ -1,7 +1,7 @@
-# SpatialPerturb
+# pyXenium 文档
 
-这里放项目简介、安装与快速开始。
+```{toctree}
+:maxdepth: 2
+:hidden:
 
-## 安装
-```bash
-pip install spatialperturb
+api
