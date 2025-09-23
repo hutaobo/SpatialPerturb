@@ -1,0 +1,36 @@
+site_name: SpatialPerturb
+site_description: Tools for spatial perturbation analysis
+repo_url: https://github.com/hutaobo/SpatialPerturb
+repo_name: SpatialPerturb
+copyright: "SPATHO © 2025"
+
+theme:
+  name: material
+  language: zh
+  features:
+    - navigation.sections
+    - navigation.instant
+    - search.suggest
+    - search.highlight
+    - content.code.copy
+
+plugins:
+  - search
+  - autorefs
+  - mkdocstrings:
+      handlers:
+        python:
+          # 关键：让 mkdocstrings 能 import 到 src 布局下的包
+          setup_commands:
+            - import os, sys; sys.path.insert(0, os.path.abspath("src"))
+          options:
+            docstring_style: numpy
+            show_source: true
+            show_signature: true
+            separate_signature: true
+  - git-revision-date-localized:
+      fallback_to_build_date: true
+
+nav:
+  - 主页: index.md
+  - API 参考: api.md

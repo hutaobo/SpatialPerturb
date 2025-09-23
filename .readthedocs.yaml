@@ -1,0 +1,20 @@
+# .readthedocs.yaml
+version: 2
+
+build:
+  os: ubuntu-22.04
+  tools:
+    python: "3.11"
+
+# 用 MkDocs 构建，并指向根目录的 mkdocs.yml
+mkdocs:
+  configuration: mkdocs.yml
+
+# 构建时在 RTD 的虚拟环境里安装依赖
+python:
+  install:
+    # 先安装你包的最小运行依赖（如果你的文档要做 API 自动提取，建议 -e .）
+    - method: pip
+      path: .
+    # 再安装文档依赖（放在 docs/requirements.txt）
+    - requirements: docs/requirements.txt
