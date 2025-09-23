@@ -1,0 +1,46 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "spatialperturb"
+version = "0.1.0"
+description = "Spatial transcriptomics × Perturb-seq toolkit: signatures, label transfer, spatial scoring, and graph-based modeling."
+readme = "README.md"
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Taobo Hu" }]
+keywords = ["spatial transcriptomics", "perturb-seq", "xenium", "scanpy", "gnn"]
+dependencies = [
+  "numpy>=1.22",
+  "pandas>=1.5",
+  "scipy>=1.9",
+  "anndata>=0.10",
+  "scanpy>=1.9",
+  "scikit-learn>=1.2",
+  "matplotlib>=3.6",
+  "seaborn>=0.12",
+  "networkx>=3.0",
+  "tqdm>=4.64",
+  "typer>=0.9"
+]
+
+[project.optional-dependencies]
+gnn = [
+  "torch>=2.1",
+  "torch-geometric>=2.5"
+]
+
+[project.scripts]
+spatialperturb = "spatialperturb.cli:app"
+
+[project.urls]
+Homepage = "https://github.com/yourname/SpatialPerturb"
+Issues = "https://github.com/yourname/SpatialPerturb/issues"
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+spatialperturb = ["py.typed"]
+
