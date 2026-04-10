@@ -8,7 +8,7 @@ version = "0.1.0"
 description = "Spatial transcriptomics × Perturb-seq toolkit: signatures, label transfer, spatial scoring, and graph-based modeling."
 readme = "README.md"
 requires-python = ">=3.9"
-license = { text = "MIT" }
+license = "MIT"
 authors = [{ name = "Taobo Hu" }]
 keywords = ["spatial transcriptomics", "perturb-seq", "xenium", "scanpy", "gnn"]
 dependencies = [
@@ -35,8 +35,8 @@ gnn = [
 spatialperturb = "spatialperturb.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/yourname/SpatialPerturb"
-Issues = "https://github.com/yourname/SpatialPerturb/issues"
+Homepage = "https://github.com/hutaobo/SpatialPerturb"
+Issues = "https://github.com/hutaobo/SpatialPerturb/issues"
 
 [tool.setuptools.packages.find]
 where = ["src"]

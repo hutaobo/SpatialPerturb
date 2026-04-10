@@ -1,5 +1,9 @@
-from typing import Iterable, Dict
+"""Signature utilities for perturbation programs and marker sets."""
+
+from typing import Dict, Iterable
+
 import pandas as pd
+
 
 def build_signature_matrix(gene_sets: Dict[str, Iterable[str]]) -> pd.DataFrame:
     """
