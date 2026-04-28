@@ -1,0 +1,7 @@
+- Cells: `41749`
+- Genes: `32317`
+- Samples: `5`
+- Barcode status counts: `{'multiple': 285, 'single': 707, 'unassigned': 40757}`
+- Single-cell control count: `24`
+- Valid perturbations: `17`
+- Successful perturbations: `17`

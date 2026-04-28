@@ -5,3 +5,7 @@ dist/
 build/
 *.egg-info/
 .ipynb_checkpoints/
+.spatialperturb-cache/
+reports/
+artifacts/
+.tmp_sphinx_html/

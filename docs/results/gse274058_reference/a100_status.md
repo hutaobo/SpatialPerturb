@@ -1,0 +1,3 @@
+- Status: pending authoritative A100 rerun.
+- Expected rerun path: `/data/taobo.hu/SpatialPerturb`.
+- Current public summary reflects the local draft run committed with this branch.
