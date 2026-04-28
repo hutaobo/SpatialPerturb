@@ -9,22 +9,24 @@
   "fetch_result": {
     "dataset": "shen_2026_scrnaseq",
     "status": "downloaded",
-    "raw_dir": "D:\\GitHub\\SpatialPerturb\\.spatialperturb-cache\\shen_2026_scrnaseq\\raw",
+    "raw_dir": "/data/taobo.hu/SpatialPerturb_a100_release_rerun/.spatialperturb-cache/shen_2026_scrnaseq/raw",
     "downloaded_files": [
-      "D:\\GitHub\\SpatialPerturb\\.spatialperturb-cache\\shen_2026_scrnaseq\\raw\\GSE274058_RAW.tar",
-      "D:\\GitHub\\SpatialPerturb\\.spatialperturb-cache\\shen_2026_scrnaseq\\raw\\GSE274058_series_matrix.txt.gz"
+      "/data/taobo.hu/SpatialPerturb_a100_release_rerun/.spatialperturb-cache/shen_2026_scrnaseq/raw/GSE274058_RAW.tar",
+      "/data/taobo.hu/SpatialPerturb_a100_release_rerun/.spatialperturb-cache/shen_2026_scrnaseq/raw/GSE274058_series_matrix.txt.gz"
     ],
-    "download_url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE274nnn/GSE274058/suppl/GSE274058_RAW.tar",
-    "matrix_url": "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE274nnn/GSE274058/matrix/GSE274058_series_matrix.txt.gz"
+    "download_urls": [
+      "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE274nnn/GSE274058/suppl/GSE274058_RAW.tar",
+      "https://ftp.ncbi.nlm.nih.gov/geo/series/GSE274nnn/GSE274058/matrix/GSE274058_series_matrix.txt.gz"
+    ]
   },
   "prepare_result": {
     "status": "ready",
-    "prepared_path": "D:\\GitHub\\SpatialPerturb\\.spatialperturb-cache\\shen_2026_scrnaseq\\prepared\\shen_2026_scrnaseq.h5ad",
+    "prepared_path": "/data/taobo.hu/SpatialPerturb_a100_release_rerun/.spatialperturb-cache/shen_2026_scrnaseq/prepared/shen_2026_scrnaseq.h5ad",
     "prepared_kind": "adata",
-    "raw_dir": "D:\\GitHub\\SpatialPerturb\\.spatialperturb-cache\\shen_2026_scrnaseq\\raw",
+    "raw_dir": "/data/taobo.hu/SpatialPerturb_a100_release_rerun/.spatialperturb-cache/shen_2026_scrnaseq/raw",
     "dataset": "shen_2026_scrnaseq"
   },
-  "prepared_path": "D:\\GitHub\\SpatialPerturb\\.spatialperturb-cache\\shen_2026_scrnaseq\\prepared\\shen_2026_scrnaseq.h5ad",
+  "prepared_path": "/data/taobo.hu/SpatialPerturb_a100_release_rerun/.spatialperturb-cache/shen_2026_scrnaseq/prepared/shen_2026_scrnaseq.h5ad",
   "n_obs": 41749,
   "n_vars": 32317,
   "n_samples": 5,
@@ -93,25 +95,25 @@
   ],
   "skipped_perturbations": [],
   "runtime": {
-    "generated_at_utc": "2026-04-28T15:06:26.259774+00:00",
-    "started_at_utc": "2026-04-28T14:59:54.575925+00:00",
-    "duration_seconds": 391.684,
-    "command": "scripts\\run_gse274058_reference.py",
-    "python_version": "3.13.2",
-    "platform": "Windows-11-10.0.26200-SP0",
+    "generated_at_utc": "2026-04-28T18:47:25.610270+00:00",
+    "started_at_utc": "2026-04-28T18:41:19.629081+00:00",
+    "duration_seconds": 365.981,
+    "command": "scripts/run_gse274058_reference.py",
+    "python_version": "3.10.12",
+    "platform": "Linux-5.15.0-1072-nvidia-x86_64-with-glibc2.35",
     "spatialperturb_version": "0.3.0",
     "dependency_versions": {
-      "anndata": "0.12.2",
-      "matplotlib": "3.10.7",
-      "numpy": "2.3.3",
+      "anndata": "0.11.4",
+      "matplotlib": "3.10.9",
+      "numpy": "2.2.6",
       "pandas": "2.3.3",
-      "scanpy": "1.11.4",
-      "scipy": "1.16.2",
+      "scanpy": "1.11.5",
+      "scipy": "1.15.3",
       "seaborn": "0.13.2",
       "sklearn": "not-installed",
       "spatialperturb": "0.3.0",
-      "statsmodels": "0.14.5",
-      "typer": "0.24.1"
+      "statsmodels": "0.14.6",
+      "typer": "0.25.0"
     }
   }
 }

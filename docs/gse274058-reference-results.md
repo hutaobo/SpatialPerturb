@@ -18,7 +18,7 @@
 ```{include} results/gse274058_reference/a100_status.md
 ```
 
-最终 public release 会在 `/data/taobo.hu/SpatialPerturb` 上完成 A100 重跑确认后更新。如果 A100 与当前草稿结果不同，发布资产会以 A100 结果为准，并在这里标注 `authoritative A100 rerun`。
+当前 public summary 已按 A100 重跑结果更新；若后续 A100 rerun 与本页不同，release assets 会继续以最新权威 rerun 为准重新生成。
 
 ## Dataset Scale and Barcode QC
 

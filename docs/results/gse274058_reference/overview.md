@@ -1,8 +1,8 @@
 - Dataset card: `shen_2026_scrnaseq` (`GSE274058`).
 - Result type: dissociated reference-side pseudobulk intrinsic DE package.
-- Generated at (UTC): `2026-04-28T15:06:26.259774+00:00`.
-- Duration: `391.684` seconds.
-- Command: `scripts\run_gse274058_reference.py`.
-- Python: `3.13.2` on `Windows-11-10.0.26200-SP0`.
+- Generated at (UTC): `2026-04-28T18:47:25.610270+00:00`.
+- Duration: `365.981` seconds.
+- Command: `scripts/run_gse274058_reference.py`.
+- Python: `3.10.12` on `Linux-5.15.0-1072-nvidia-x86_64-with-glibc2.35`.
 - SpatialPerturb version: `0.3.0`.
-- Source report directory: `D:\GitHub\SpatialPerturb\reports\gse274058_reference_run`.
+- Source report directory: `/data/taobo.hu/SpatialPerturb_a100_release_rerun/reports/gse274058_reference_run`.

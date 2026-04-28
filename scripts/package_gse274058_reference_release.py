@@ -30,6 +30,11 @@ def _parse_args() -> argparse.Namespace:
     parser.add_argument("--docs-data-dir", type=Path, default=DEFAULT_DOCS_DATA_DIR)
     parser.add_argument("--docs-static-dir", type=Path, default=DEFAULT_DOCS_STATIC_DIR)
     parser.add_argument("--comparison-json", type=Path, default=None)
+    parser.add_argument(
+        "--authoritative-source",
+        default=None,
+        help="Human-readable source path for the authoritative run, e.g. an A100 report directory.",
+    )
     return parser.parse_args()
 
 
@@ -203,8 +208,13 @@ def main() -> None:
             f"- Candidate report: `{comparison_status.get('candidate_report_dir', 'unknown')}`.",
             f"- Compared at (UTC): `{comparison_status.get('compared_at_utc', 'unknown')}`.",
         ]
+        if args.authoritative_source:
+            a100_status_lines.append(f"- Authoritative source: `{args.authoritative_source}`.")
+        if comparison_status.get("status") == "replaced":
+            a100_status_lines.append("- Outcome: A100 rerun replaced the local draft package for release.")
 
     runtime = dataset_summary.get("runtime", {})
+    source_report_dir = args.authoritative_source or str(report_dir)
     overview_lines = [
         f"- Dataset card: `{dataset_summary['dataset']}` (`{dataset_summary['accession']}`).",
         "- Result type: dissociated reference-side pseudobulk intrinsic DE package.",
@@ -213,7 +223,7 @@ def main() -> None:
         f"- Command: `{runtime.get('command', 'unknown')}`.",
         f"- Python: `{runtime.get('python_version', 'unknown')}` on `{runtime.get('platform', 'unknown')}`.",
         f"- SpatialPerturb version: `{runtime.get('spatialperturb_version', 'unknown')}`.",
-        f"- Source report directory: `{report_dir}`.",
+        f"- Source report directory: `{source_report_dir}`.",
     ]
     qc_summary_lines = [
         f"- Cells: `{dataset_summary['n_obs']}`",
