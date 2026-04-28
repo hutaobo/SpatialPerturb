@@ -1,0 +1,6 @@
+- Status: replaced.
+- Baseline report: `D:\GitHub\SpatialPerturb\reports\gse274058_reference_run`.
+- Candidate report: `D:\GitHub\SpatialPerturb\reports\a100_gse274058_reference_run`.
+- Compared at (UTC): `2026-04-28T18:48:11.160414+00:00`.
+- Authoritative source: `/data/taobo.hu/SpatialPerturb_a100_release_rerun/reports/gse274058_reference_run`.
+- Outcome: A100 rerun replaced the local draft package for release.

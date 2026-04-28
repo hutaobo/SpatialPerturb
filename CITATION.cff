@@ -4,5 +4,5 @@ message: If you use this package, please cite it.
 authors:
   - family-names: Hu
     given-names: Taobo
-version: 0.1.0
-repository-code: https://github.com/yourname/SpatialPerturb
+version: 0.3.0
+repository-code: https://github.com/hutaobo/SpatialPerturb
