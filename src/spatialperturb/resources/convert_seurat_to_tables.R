@@ -15,9 +15,18 @@ suppressPackageStartupMessages({
 
 read_seurat_object <- function(path) {
   if (grepl("\\.gz$", path, ignore.case = TRUE)) {
-    con <- gzfile(path, open = "rb")
-    on.exit(close(con), add = TRUE)
-    return(readRDS(con))
+    # Large GEO .rds.gz files can exceed the range where R's gzfile()
+    # connection reliably streams serialized R objects. Decompress with the
+    # system gzip first, then read the plain RDS.
+    decompressed <- file.path(dirname(path), sub("\\.gz$", "", basename(path), ignore.case = TRUE))
+    if (!file.exists(decompressed)) {
+      status <- system2("gzip", c("-dc", path), stdout = decompressed, stderr = TRUE)
+      if (!identical(attr(status, "status"), NULL)) {
+        stop(paste(c("gzip decompression failed:", status), collapse = "\n"))
+      }
+    }
+    on.exit(unlink(decompressed), add = TRUE)
+    return(readRDS(decompressed))
   }
   readRDS(path)
 }
