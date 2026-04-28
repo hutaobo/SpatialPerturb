@@ -20,9 +20,14 @@ read_seurat_object <- function(path) {
     # system gzip first, then read the plain RDS.
     decompressed <- file.path(dirname(path), sub("\\.gz$", "", basename(path), ignore.case = TRUE))
     if (!file.exists(decompressed)) {
-      status <- system2("gzip", c("-dc", path), stdout = decompressed, stderr = TRUE)
-      if (!identical(attr(status, "status"), NULL)) {
-        stop(paste(c("gzip decompression failed:", status), collapse = "\n"))
+      command <- sprintf(
+        "set -euo pipefail; gzip -dc %s > %s",
+        shQuote(path),
+        shQuote(decompressed)
+      )
+      status <- system2("bash", c("-lc", command))
+      if (!identical(status, 0L)) {
+        stop(sprintf("gzip decompression failed with exit status %s", status))
       }
     }
     on.exit(unlink(decompressed), add = TRUE)
