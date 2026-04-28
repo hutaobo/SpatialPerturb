@@ -9,6 +9,7 @@ from typing import Any
 import numpy as np
 import pandas as pd
 from anndata import AnnData
+from scipy import sparse
 from scipy.stats import mannwhitneyu, pearsonr, spearmanr, ttest_ind
 import statsmodels.api as sm
 
@@ -153,6 +154,20 @@ def _run_simple_de_matrix(
         control_n=control_matrix.shape[0],
         method="simple",
     )
+
+
+def _mean_expression_by_mask(
+    adata: AnnData,
+    mask: np.ndarray,
+    *,
+    features: Sequence[str],
+    layer: str | None = None,
+) -> np.ndarray:
+    view = adata[mask, list(features)]
+    matrix = view.layers[layer] if layer is not None else view.X
+    if sparse.issparse(matrix):
+        return np.asarray(matrix.mean(axis=0)).ravel()
+    return np.asarray(matrix, dtype=float).mean(axis=0)
 
 
 def _aggregate_pseudobulk(
@@ -367,6 +382,24 @@ def intrinsic_de(
                 f"{min_samples_per_group} samples in both case and control groups for pseudobulk, found "
                 f"{case_sample_n} and {control_sample_n}."
             )
+
+    if method == "simple" and effect_size_only:
+        resolved_features = _default_feature_names(adata, features)
+        case_mean = _mean_expression_by_mask(adata, case_mask, features=resolved_features, layer=layer)
+        control_mean = _mean_expression_by_mask(adata, control_mask, features=resolved_features, layer=layer)
+        return _build_de_output(
+            perturbation=perturbation,
+            control=control,
+            effect_type="intrinsic",
+            features=resolved_features,
+            case_mean=case_mean,
+            control_mean=control_mean,
+            statistics=np.zeros(len(resolved_features), dtype=float),
+            pvalues=np.ones(len(resolved_features), dtype=float),
+            case_n=int(case_mask.sum()),
+            control_n=int(control_mask.sum()),
+            method="simple",
+        )
 
     return _run_de(
         adata,

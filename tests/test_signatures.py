@@ -36,6 +36,23 @@ def test_derive_score_and_compare_programs(demo_adata):
     assert np.isclose(concordance.loc[0, "score"], 1.0)
 
 
+def test_effect_size_only_de_preserves_log2fc(demo_adata):
+    full = sp.intrinsic_de(demo_adata, perturbation="Lrrk2", control="control", cell_type="neuron", roi="hippocampus")
+    fast = sp.intrinsic_de(
+        demo_adata,
+        perturbation="Lrrk2",
+        control="control",
+        cell_type="neuron",
+        roi="hippocampus",
+        effect_size_only=True,
+    )
+
+    merged = full[["gene", "log2fc"]].merge(fast[["gene", "log2fc", "pvalue", "fdr"]], on="gene", suffixes=("_full", "_fast"))
+    assert np.allclose(merged["log2fc_full"], merged["log2fc_fast"])
+    assert np.allclose(merged["pvalue"], 1.0)
+    assert np.allclose(merged["fdr"], 1.0)
+
+
 def test_build_reference_programs_and_neighbor_aggregation(demo_pair):
     spatial, reference = demo_pair
     programs, de_results = sp.build_reference_programs(
