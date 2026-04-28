@@ -64,6 +64,15 @@ def _rank_scores(table: pd.DataFrame, *, top_n: int) -> pd.DataFrame:
     return ranked
 
 
+def _program_reference_genes(program: str, genes_by_program: dict[str, list[str]]) -> list[str]:
+    program_name = str(program)
+    if program_name in genes_by_program:
+        return genes_by_program[program_name]
+    if ":" in program_name:
+        return genes_by_program.get(program_name.split(":", 1)[1], [])
+    return []
+
+
 def _markdown_list(table: pd.DataFrame, *, max_rows: int = 12) -> list[str]:
     lines: list[str] = []
     for row in table.head(max_rows).itertuples(index=False):
@@ -98,9 +107,21 @@ def interpret_report(report_dir: str | Path, *, top_n: int = 5) -> dict[str, Any
     top_neighbors = _rank_scores(neighbor_scores, top_n=top_n)
     genes_by_program = _top_reference_genes(reference_de)
     if not top_programs.empty:
-        top_programs["top_reference_genes"] = top_programs["program"].astype(str).map(lambda program: ", ".join(genes_by_program.get(program, [])))
+        top_programs["top_reference_genes"] = top_programs["program"].astype(str).map(
+            lambda program: ", ".join(_program_reference_genes(program, genes_by_program))
+        )
+        top_programs["theme"] = top_programs.apply(
+            lambda row: _program_theme(str(row["program"]), _program_reference_genes(str(row["program"]), genes_by_program)),
+            axis=1,
+        )
     if not top_neighbors.empty:
-        top_neighbors["top_reference_genes"] = top_neighbors["program"].astype(str).map(lambda program: ", ".join(genes_by_program.get(program, [])))
+        top_neighbors["top_reference_genes"] = top_neighbors["program"].astype(str).map(
+            lambda program: ", ".join(_program_reference_genes(program, genes_by_program))
+        )
+        top_neighbors["theme"] = top_neighbors.apply(
+            lambda row: _program_theme(str(row["program"]), _program_reference_genes(str(row["program"]), genes_by_program)),
+            axis=1,
+        )
 
     top_programs_path = tables_dir / "top_programs_by_roi_cell_type.tsv"
     top_neighbors_path = tables_dir / "top_neighbor_programs.tsv"
