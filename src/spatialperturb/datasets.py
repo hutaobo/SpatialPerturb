@@ -55,6 +55,10 @@ _GRNA_ALIAS_MAP = {
 }
 _CONTROL_GUIDE_RE = re.compile(r"(?:^|[_\-\s])(NT|non.?target|intergenic|control)(?:$|[_\-\s])", re.IGNORECASE)
 _GUIDE_SUFFIX_RE = re.compile(r"(?:_sgRNA\d+|_sg\d+)$", re.IGNORECASE)
+_GUIDE_FEATURE_RE = re.compile(
+    r"(?:_sgRNA\d+|_sg\d+)(?:-\d+)?$|intergenic_chr_|non.?target|control",
+    re.IGNORECASE,
+)
 _FLAT_10X_FILE_RE = re.compile(
     r"^(?P<gsm>GSM\d+)_(?P<kind>barcodes|features|matrix|protospacer_calls_per_cell|protospacer_umi_thresholds)_(?P<sample>.+?)\.(?:tsv|csv|mtx)\.gz$",
     re.IGNORECASE,
@@ -374,6 +378,17 @@ def _finalize_perturbation_obs(
     return target
 
 
+def _infer_guide_feature_names(var: pd.DataFrame) -> list[str]:
+    if len(var.index) == 0:
+        return []
+    names = pd.Index(var.index.astype(str))
+    guide_mask = names.to_series(index=names).str.contains(_GUIDE_FEATURE_RE, na=False)
+    if "feature_type" in var.columns:
+        feature_types = var["feature_type"].astype(str)
+        guide_mask = guide_mask | feature_types.str.contains(r"CRISPR|guide|protospacer", case=False, regex=True, na=False).to_numpy()
+    return sorted(names[guide_mask].astype(str).tolist())
+
+
 def _read_control_counts_table(path: Path, *, sample_name: str, cell_line: str, dataset_name: str) -> AnnData:
     expression = pd.read_csv(path, index_col=0, compression="gzip").transpose()
     expression.index = _normalize_obs_index(expression.index)
@@ -410,6 +425,7 @@ def _read_control_counts_table(path: Path, *, sample_name: str, cell_line: str, 
         },
     )
     adata.var_names_make_unique()
+    adata.uns["spatialperturb"]["barcode_columns"] = _infer_guide_feature_names(adata.var)
     prefixed = [f"{sample_name}:{barcode}" for barcode in adata.obs_names.astype(str)]
     adata.obs_names = prefixed
     return adata
@@ -481,6 +497,7 @@ def _read_sparse_10x_sample(
         },
     )
     adata.var_names_make_unique()
+    adata.uns["spatialperturb"]["barcode_columns"] = _infer_guide_feature_names(adata.var)
     prefixed = [f"{sample_name}:{barcode}" for barcode in adata.obs_names.astype(str)]
     adata.obs_names = prefixed
     return adata
@@ -545,6 +562,7 @@ def _prepare_flat_geo_10x_dataset(card: DatasetCard, layout: dict[str, Path]) ->
         "source_accession": card.accession,
         "parser": card.parser,
         "sample_count": len(adatas),
+        "barcode_columns": _infer_guide_feature_names(adata.var),
         "guide_normalization": {
             "suffix_regex": _GUIDE_SUFFIX_RE.pattern,
             "control_regex": _CONTROL_GUIDE_RE.pattern,

@@ -453,6 +453,7 @@ def run_reference_projection_benchmark(
             covariates=cfg.get("reference_covariates"),
             top_n=int(cfg.get("top_n", 50)),
             direction=str(cfg.get("direction", "both")),
+            effect_size_only=bool(cfg.get("reference_effect_size_only", False)),
             return_de_results=True,
         )
         all_programs.update({f"{dataset_name_ref}:{program}": genes for program, genes in programs.items()})

@@ -38,6 +38,7 @@ def test_prepare_gse241115_breast_cropseq_parses_sparse_and_control_inputs(tmp_p
         [
             [5, 0, 1],
             [0, 4, 1],
+            [1, 1, 0],
         ]
     )
     matrix_buffer = io.BytesIO()
@@ -68,7 +69,11 @@ def test_prepare_gse241115_breast_cropseq_parses_sparse_and_control_inputs(tmp_p
         _add_tar_bytes(
             archive,
             "GSM7716951_features_HCC38_aggrMH001-3.tsv.gz",
-            _gzip_bytes(b"ENSG000001\tGeneA\tGene Expression\nENSG000002\tGeneB\tGene Expression\n"),
+            _gzip_bytes(
+                b"ENSG000001\tGeneA\tGene Expression\n"
+                b"ENSG000002\tGeneB\tGene Expression\n"
+                b"ARID1A_sgRNA1\tARID1A_sgRNA1\tCRISPR Guide Capture\n"
+            ),
         )
         _add_tar_bytes(
             archive,
@@ -86,6 +91,7 @@ def test_prepare_gse241115_breast_cropseq_parses_sparse_and_control_inputs(tmp_p
     assert "ARID1A" in set(adata.obs["perturbation"].astype(str))
     assert "control" in set(adata.obs["perturbation"].astype(str))
     assert "unassigned" in set(adata.obs["perturbation"].astype(str))
+    assert "ARID1A_sgRNA1" in adata.uns["spatialperturb"]["barcode_columns"]
 
     perturbed = adata.obs[adata.obs["guide_id"].astype(str) == "ARID1A_sgRNA1"].iloc[0]
     assert perturbed["perturbation"] == "ARID1A"

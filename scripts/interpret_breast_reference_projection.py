@@ -19,6 +19,8 @@ def _read_table(path: Path) -> pd.DataFrame:
 
 def _program_theme(program: str, genes: list[str] | None = None) -> str:
     text = " ".join([program, *(genes or [])]).upper()
+    if any(token in text for token in ("TFF1", "TFF3", "AGR2", "MUCL1", "ESR1", "PGR", "FOXA1", "GATA3", "KRT8", "KRT18", "KRT19")):
+        return "luminal or secretory breast epithelial tumor state, often overlapping estrogen-response and differentiated invasive tumor programs"
     if any(token in text for token in ("IFN", "STAT1", "IRF", "CXCL", "TNFA", "TNF")):
         return "immune/cytokine signaling, often compatible with interferon or inflammatory tumor microenvironment states"
     if any(token in text for token in ("TGFB", "TGF", "COL", "VIM", "FN1", "MMP")):
@@ -64,6 +66,15 @@ def _rank_scores(table: pd.DataFrame, *, top_n: int) -> pd.DataFrame:
     return ranked
 
 
+def _program_reference_genes(program: str, genes_by_program: dict[str, list[str]]) -> list[str]:
+    program_name = str(program)
+    if program_name in genes_by_program:
+        return genes_by_program[program_name]
+    if ":" in program_name:
+        return genes_by_program.get(program_name.split(":", 1)[1], [])
+    return []
+
+
 def _markdown_list(table: pd.DataFrame, *, max_rows: int = 12) -> list[str]:
     lines: list[str] = []
     for row in table.head(max_rows).itertuples(index=False):
@@ -98,9 +109,21 @@ def interpret_report(report_dir: str | Path, *, top_n: int = 5) -> dict[str, Any
     top_neighbors = _rank_scores(neighbor_scores, top_n=top_n)
     genes_by_program = _top_reference_genes(reference_de)
     if not top_programs.empty:
-        top_programs["top_reference_genes"] = top_programs["program"].astype(str).map(lambda program: ", ".join(genes_by_program.get(program, [])))
+        top_programs["top_reference_genes"] = top_programs["program"].astype(str).map(
+            lambda program: ", ".join(_program_reference_genes(program, genes_by_program))
+        )
+        top_programs["theme"] = top_programs.apply(
+            lambda row: _program_theme(str(row["program"]), _program_reference_genes(str(row["program"]), genes_by_program)),
+            axis=1,
+        )
     if not top_neighbors.empty:
-        top_neighbors["top_reference_genes"] = top_neighbors["program"].astype(str).map(lambda program: ", ".join(genes_by_program.get(program, [])))
+        top_neighbors["top_reference_genes"] = top_neighbors["program"].astype(str).map(
+            lambda program: ", ".join(_program_reference_genes(program, genes_by_program))
+        )
+        top_neighbors["theme"] = top_neighbors.apply(
+            lambda row: _program_theme(str(row["program"]), _program_reference_genes(str(row["program"]), genes_by_program)),
+            axis=1,
+        )
 
     top_programs_path = tables_dir / "top_programs_by_roi_cell_type.tsv"
     top_neighbors_path = tables_dir / "top_neighbor_programs.tsv"
@@ -108,6 +131,7 @@ def interpret_report(report_dir: str | Path, *, top_n: int = 5) -> dict[str, Any
     top_neighbors.to_csv(top_neighbors_path, sep="\t", index=False)
 
     summary = manifest.get("summary", {})
+    config = manifest.get("config", {})
     lines = [
         "# Breast Xenium Reference Projection: Biological Interpretation",
         "",
@@ -146,6 +170,10 @@ def interpret_report(report_dir: str | Path, *, top_n: int = 5) -> dict[str, Any
             "- Programs with broad stress, proliferation, interferon, or extracellular-matrix genes can reflect shared state biology rather than a single upstream regulator.",
         ]
     )
+    if config.get("reference_effect_size_only"):
+        lines.append(
+            "- This run used effect-size-only reference DE for speed on full-scale data; program ranking is based on log2 fold-change, while p-values/FDR in `reference_de.tsv` should not be used for statistical claims."
+        )
     if reference_status:
         blocked = {
             name: payload

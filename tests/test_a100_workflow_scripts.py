@@ -59,8 +59,8 @@ def test_interpret_breast_reference_projection_writes_biology_outputs(tmp_path):
     ).to_csv(tables_dir / "neighbor_program_scores_by_group.tsv", sep="\t", index=False)
     pd.DataFrame(
         [
-            {"program": "gse241115_breast_cropseq:STAT1", "gene": "CXCL10", "log2fc": 2.0},
-            {"program": "gse241115_breast_cropseq:TGFB1", "gene": "COL1A1", "log2fc": 1.7},
+            {"program": "STAT1", "gene": "CXCL10", "log2fc": 2.0},
+            {"program": "TGFB1", "gene": "COL1A1", "log2fc": 1.7},
         ]
     ).to_csv(tables_dir / "reference_de.tsv", sep="\t", index=False)
 
@@ -74,6 +74,8 @@ def test_interpret_breast_reference_projection_writes_biology_outputs(tmp_path):
     assert "GSE281048_BLOCKED_RSCRIPT_MISSING" in text
     top_programs = pd.read_csv(result["top_programs_path"], sep="\t")
     assert "theme" in top_programs.columns
+    assert "CXCL10" in top_programs["top_reference_genes"].fillna("").to_string()
+    assert "immune/cytokine" in top_programs["theme"].to_string()
 
 
 def test_a100_monitor_status_detects_complete_with_blocked_optional_reference(tmp_path):

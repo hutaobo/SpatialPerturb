@@ -35,6 +35,7 @@ nav:
   - 主页: index.md
   - Workflow: workflow.md
   - Benchmarks: benchmarks.md
+  - Breast Reference Projection: breast-reference-projection.md
   - Paper Repro: paper-repro.md
   - GSE274058 Reference Results: gse274058-reference-results.md
   - API 参考: api.md
