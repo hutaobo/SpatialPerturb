@@ -7,6 +7,7 @@ from scipy import io as spio
 from scipy import sparse
 
 import spatialperturb as sp
+from spatialperturb.datasets import _standardize_pathway_atlas_obs
 
 
 def _gzip_bytes(payload: bytes) -> bytes:
@@ -96,3 +97,26 @@ def test_prepare_gse241115_breast_cropseq_parses_sparse_and_control_inputs(tmp_p
     perturbed = adata.obs[adata.obs["guide_id"].astype(str) == "ARID1A_sgRNA1"].iloc[0]
     assert perturbed["perturbation"] == "ARID1A"
     assert perturbed["perturbation_status"] == "single"
+
+
+def test_gse281048_pathway_guides_are_collapsed_to_gene_level():
+    obs = pd.DataFrame(
+        {
+            "sample": ["MCF7_IFNB", "MCF7_IFNB", "MCF7_IFNB"],
+            "cell_line": ["MCF7", "MCF7", "MCF7"],
+            "guide": ["IRF1g2", "NTg11", "MAPK3g1"],
+        },
+        index=["cell_a", "cell_b", "cell_c"],
+    )
+
+    standardized = _standardize_pathway_atlas_obs(
+        obs,
+        file_name="GSE281048_Seurat_object_IFNB_Perturb_seq",
+        dataset_name="gse281048_pathway_atlas",
+    )
+
+    assert standardized.loc["cell_a", "perturbation"] == "IRF1"
+    assert standardized.loc["cell_b", "perturbation"] == "control"
+    assert standardized.loc["cell_c", "perturbation"] == "MAPK3"
+    assert standardized["perturbation_status"].tolist() == ["single", "single", "single"]
+    assert standardized["stimulus"].tolist() == ["IFNB", "IFNB", "IFNB"]

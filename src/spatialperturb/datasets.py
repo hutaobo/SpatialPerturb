@@ -55,6 +55,7 @@ _GRNA_ALIAS_MAP = {
 }
 _CONTROL_GUIDE_RE = re.compile(r"(?:^|[_\-\s])(NT|non.?target|intergenic|control)(?:$|[_\-\s])", re.IGNORECASE)
 _GUIDE_SUFFIX_RE = re.compile(r"(?:_sgRNA\d+|_sg\d+)$", re.IGNORECASE)
+_PATHWAY_ATLAS_GUIDE_SUFFIX_RE = re.compile(r"g\d+$", re.IGNORECASE)
 _GUIDE_FEATURE_RE = re.compile(
     r"(?:_sgRNA\d+|_sg\d+)(?:-\d+)?$|intergenic_chr_|non.?target|control",
     re.IGNORECASE,
@@ -331,6 +332,19 @@ def _normalize_perturbation_name(guide_id: str | None, *, control_label: str = "
     if not guide:
         return "unassigned"
     base = _GUIDE_SUFFIX_RE.sub("", guide)
+    if _is_control_perturbation(base):
+        return control_label
+    return base
+
+
+def _normalize_pathway_atlas_perturbation_name(guide_id: str | None, *, control_label: str = "control") -> str:
+    """Normalize GSE281048 guide IDs such as ``IRF1g2`` and ``NTg11``."""
+    if guide_id is None:
+        return "unassigned"
+    guide = str(guide_id).strip()
+    if not guide:
+        return "unassigned"
+    base = _PATHWAY_ATLAS_GUIDE_SUFFIX_RE.sub("", guide)
     if _is_control_perturbation(base):
         return control_label
     return base
@@ -675,6 +689,13 @@ def _standardize_pathway_atlas_obs(
 
     num_features_col = _find_obs_column(target, ("num_features", "num_guides"), contains=("num_features", "num_guides"))
     target = _finalize_perturbation_obs(target, guide_column="guide_id", feature_count_column=num_features_col)
+    single_mask = target["perturbation_status"].astype(str) == "single"
+    target.loc[single_mask, "perturbation"] = [
+        _normalize_pathway_atlas_perturbation_name(guide_id)
+        for guide_id in target.loc[single_mask, "guide_id"].astype(str)
+    ]
+    target["include_for_inference"] = target["perturbation_status"].astype(str) == "single"
+    target.loc[target["perturbation"].astype(str) == "control", "include_for_inference"] = True
     target["reference_source"] = dataset_name
     target["cell_type"] = target.get("cell_type", "unknown").astype(str) if "cell_type" in target.columns else "unknown"
     target["roi"] = target.get("roi", "global").astype(str) if "roi" in target.columns else "global"
