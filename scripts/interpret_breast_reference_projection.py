@@ -19,6 +19,8 @@ def _read_table(path: Path) -> pd.DataFrame:
 
 def _program_theme(program: str, genes: list[str] | None = None) -> str:
     text = " ".join([program, *(genes or [])]).upper()
+    if any(token in text for token in ("TFF1", "TFF3", "AGR2", "MUCL1", "ESR1", "PGR", "FOXA1", "GATA3", "KRT8", "KRT18", "KRT19")):
+        return "luminal or secretory breast epithelial tumor state, often overlapping estrogen-response and differentiated invasive tumor programs"
     if any(token in text for token in ("IFN", "STAT1", "IRF", "CXCL", "TNFA", "TNF")):
         return "immune/cytokine signaling, often compatible with interferon or inflammatory tumor microenvironment states"
     if any(token in text for token in ("TGFB", "TGF", "COL", "VIM", "FN1", "MMP")):
