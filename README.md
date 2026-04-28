@@ -1,5 +1,8 @@
 # SpatialPerturb
 
+[![PyPI](https://img.shields.io/pypi/v/SpatialPerturb.svg)](https://pypi.org/project/SpatialPerturb/)
+[![Read the Docs](https://readthedocs.org/projects/spatialperturb/badge/?version=latest)](https://spatialperturb.readthedocs.io/en/latest/?badge=latest)
+
 SpatialPerturb is a Python toolkit for combining **Spatial Transcriptomics** with **Perturb-seq** workflows. It is built around `AnnData`/`scanpy` objects and focuses on perturbation signatures, reference projection, spatial program scoring, neighborhood summaries, and benchmark-ready reports.
 
 The current package supports two complementary analysis modes:
