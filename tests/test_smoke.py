@@ -114,3 +114,38 @@ def test_prepare_xenium_and_run_reference_cli_commands(tmp_path, monkeypatch):
     assert (tmp_path / "prepared_xenium.h5ad").exists()
     assert reference_result.exit_code == 0
     assert (tmp_path / "reference-report" / "manifest.json").exists()
+
+
+def test_run_nature_methods_breast_analysis_cli_command(tmp_path, monkeypatch):
+    runner = CliRunner()
+
+    def fake_run_nature_methods_breast_analysis(spatial_input, *, reference_datasets, config, output_dir):
+        Path(output_dir).mkdir(parents=True, exist_ok=True)
+        (Path(output_dir) / "manifest.json").write_text('{"benchmark":"nature_methods_breast_shortcomm"}', encoding="utf-8")
+        return {
+            "manifest": {
+                "dataset": "demo",
+                "reference_datasets": reference_datasets,
+                "summary": {"claim_level_rows": 3},
+            }
+        }
+
+    monkeypatch.setattr(cli_module, "run_nature_methods_breast_analysis", fake_run_nature_methods_breast_analysis)
+    result = runner.invoke(
+        app,
+        [
+            "run-nature-methods-breast-analysis",
+            str(tmp_path / "prepared_xenium.h5ad"),
+            str(tmp_path / "nature-report"),
+            "--n-random",
+            "2",
+            "--n-spatial-permutations",
+            "2",
+            "--n-bootstrap",
+            "3",
+        ],
+    )
+
+    assert result.exit_code == 0
+    assert "claim_level_rows=3" in result.stdout
+    assert (tmp_path / "nature-report" / "manifest.json").exists()

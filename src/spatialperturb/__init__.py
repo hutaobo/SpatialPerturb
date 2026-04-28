@@ -10,6 +10,7 @@ from .benchmarks import (
     available_benchmarks,
     run_core_benchmark,
     run_cross_platform_benchmark,
+    run_nature_methods_breast_analysis,
     run_reference_projection_benchmark,
 )
 from .datasets import (
@@ -33,12 +34,17 @@ from .schema import (
 )
 from .signatures import (
     aggregate_program_scores,
+    bootstrap_program_score_intervals,
     build_reference_programs,
     build_signature_matrix,
+    calibrate_program_scores,
     compare_program_concordance,
     derive_perturbation_programs,
     neighbor_program_scores,
+    program_redundancy_table,
     score_programs,
+    spatial_autocorrelation_scores,
+    validate_reference_programs,
 )
 from .tl import differential_lr, intrinsic_de, neighbor_de, platform_concordance, power_curve
 
@@ -63,9 +69,11 @@ __all__ = [
     "available_benchmarks",
     "available_datasets",
     "benchmarks",
+    "bootstrap_program_score_intervals",
     "build_reference_programs",
     "build_signature_matrix",
     "build_spatial_graph",
+    "calibrate_program_scores",
     "collect_neighbors",
     "compare_program_concordance",
     "datasets",
@@ -87,6 +95,7 @@ __all__ = [
     "power_curve",
     "pp",
     "prepare_dataset",
+    "program_redundancy_table",
     "qc_perturbations",
     "read_stereoseq",
     "read_xenium",
@@ -94,10 +103,13 @@ __all__ = [
     "reports",
     "run_core_benchmark",
     "run_cross_platform_benchmark",
+    "run_nature_methods_breast_analysis",
     "run_reference_projection_benchmark",
     "schema",
     "score_programs",
     "signatures",
+    "spatial_autocorrelation_scores",
     "tl",
+    "validate_reference_programs",
     "validate_spatialperturb_schema",
 ]

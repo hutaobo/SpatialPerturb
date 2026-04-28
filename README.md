@@ -18,6 +18,7 @@ The current package supports two complementary analysis modes:
 - Public dataset lifecycle helpers: `fetch_dataset()`, `prepare_dataset()`, `load_public_dataset()`.
 - Intrinsic DE, neighborhood DE, ligand-receptor scoring, power curves, and platform concordance.
 - Perturb-seq reference program construction and spatial projection onto unperturbed tissue.
+- Publication-grade reference validation, null calibration, spatial autocorrelation, ablations, and Nature Methods-style figure/report outputs.
 - A100-ready scripts for breast Xenium WTA + Perturb-seq reference projection.
 - Reproducible report directories with tables, heatmaps, manifests, and biological interpretation notes.
 
@@ -125,6 +126,7 @@ spatialperturb fetch-dataset gse241115_breast_cropseq
 spatialperturb prepare-dataset gse241115_breast_cropseq
 spatialperturb prepare-xenium /path/to/xenium_outs /path/to/xenium_wta_breast.h5ad
 spatialperturb run-reference-benchmark /path/to/xenium_wta_breast.h5ad /path/to/report
+spatialperturb run-nature-methods-breast-analysis /path/to/xenium_wta_breast.h5ad /path/to/nature_methods_report
 spatialperturb run-benchmark demo_spatialperturb --output-dir reports/demo
 spatialperturb validate path/to/data.h5ad
 ```
@@ -149,6 +151,16 @@ Expected output directory:
 
 Important outputs include `manifest.json`, `biological_interpretation.md`, `tables/program_scores_by_group.tsv`, `tables/neighbor_program_scores_by_group.tsv`, cell-level score tables, and heatmaps.
 
+For the Nature Methods Brief Communication workflow, including R/Seurat setup for the optional `GSE281048` MCF7 pathway atlas:
+
+```bash
+tmux new -d -s sp_nm_breast \
+  "bash /data/taobo.hu/SpatialPerturb/code/SpatialPerturb/scripts/a100_run_nature_methods_breast_analysis.sh 2>&1 | tee /data/taobo.hu/SpatialPerturb/reports/nature_methods_breast_shortcomm/run.log"
+bash /data/taobo.hu/SpatialPerturb/code/SpatialPerturb/scripts/a100_monitor_nature_methods_breast_analysis.sh --watch
+```
+
+Expected outputs include `nature_methods_summary.md`, `nature_methods_shortcomm_scaffold.md`, `figures/main_figure_1.png`, `figures/main_figure_2.png`, `tables/reference_validation.tsv`, `tables/calibrated_program_scores_by_group.tsv`, `tables/spatial_autocorrelation.tsv`, and `tables/ablation_summary.tsv`.
+
 ## Package Layout
 
 - `spatialperturb.io`: AnnData ingestion helpers, including Xenium and Stereo-seq style readers.
@@ -167,6 +179,7 @@ ReadTheDocs builds from `docs/` using Sphinx/MyST. The main workflow pages are:
 - `docs/workflow.md`
 - `docs/benchmarks.md`
 - `docs/breast-reference-projection.md`
+- `docs/nature-methods-shortcomm.md`
 - `docs/api.md`
 
 ## Citation

@@ -36,6 +36,7 @@ nav:
   - Workflow: workflow.md
   - Benchmarks: benchmarks.md
   - Breast Reference Projection: breast-reference-projection.md
+  - Nature Methods ShortComm: nature-methods-shortcomm.md
   - Paper Repro: paper-repro.md
   - GSE274058 Reference Results: gse274058-reference-results.md
   - API 参考: api.md

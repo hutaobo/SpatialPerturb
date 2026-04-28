@@ -77,11 +77,27 @@ def build_status(
         "program_scores_heatmap": _path_status(figures_dir / "program_scores_heatmap.png"),
         "biological_interpretation": _path_status(interpretation_path),
     }
+    if "nature_methods" in report_root.name:
+        expected_outputs.update(
+            {
+                "nature_methods_summary": _path_status(report_root / "nature_methods_summary.md"),
+                "main_figure_1": _path_status(figures_dir / "main_figure_1.png"),
+                "main_figure_2": _path_status(figures_dir / "main_figure_2.png"),
+                "reference_validation": _path_status(tables_dir / "reference_validation.tsv"),
+                "calibrated_program_scores_by_group": _path_status(tables_dir / "calibrated_program_scores_by_group.tsv"),
+                "spatial_autocorrelation": _path_status(tables_dir / "spatial_autocorrelation.tsv"),
+                "ablation_summary": _path_status(tables_dir / "ablation_summary.tsv"),
+            }
+        )
 
     log_tail = _tail(run_log_path)
     log_text = "\n".join(log_tail)
     reference_status = _load_json(reference_status_path)
+    if not reference_status and (report_root / "reference_prepare_status.json").exists():
+        reference_status = _load_json(report_root / "reference_prepare_status.json")
     manifest = _load_json(manifest_path)
+    if not reference_status and isinstance(manifest, dict):
+        reference_status = manifest.get("reference_status", {}) or {}
 
     if manifest_path.exists() and interpretation_path.exists():
         state = "COMPLETE"

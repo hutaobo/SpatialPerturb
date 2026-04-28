@@ -8,7 +8,7 @@ import anndata as ad
 import typer
 
 from . import __version__
-from .benchmarks import available_benchmarks, run_core_benchmark, run_reference_projection_benchmark
+from .benchmarks import available_benchmarks, run_core_benchmark, run_nature_methods_breast_analysis, run_reference_projection_benchmark
 from .datasets import available_datasets, fetch_dataset, prepare_dataset
 from .io import read_xenium
 from .schema import schema_summary, validate_spatialperturb_schema
@@ -156,6 +156,47 @@ def run_reference_benchmark_command(
     typer.echo(f"dataset={results['manifest']['dataset'] if 'manifest' in results else spatial_input}")
     typer.echo(f"report_dir={output_dir.resolve()}")
     typer.echo(f"references={','.join(datasets)}")
+
+
+@app.command("run-nature-methods-breast-analysis")
+def run_nature_methods_breast_analysis_command(
+    spatial_input: Path,
+    output_dir: Path,
+    cache_dir: Path = Path(".spatialperturb-cache"),
+    cell_group_path: Path | None = None,
+    roi_geojson_path: Path | None = None,
+    sample_name: str | None = None,
+    reference_datasets: str = "gse241115_breast_cropseq,gse281048_pathway_atlas",
+    n_random: int = 25,
+    n_spatial_permutations: int = 25,
+    n_bootstrap: int = 100,
+    min_claim_cells: int = 50,
+) -> None:
+    """Run the publication-grade Nature Methods breast short-communication workflow."""
+    datasets = [name.strip() for name in reference_datasets.split(",") if name.strip()]
+    config: dict[str, object] = {
+        "cache_dir": cache_dir,
+        "cell_group_path": cell_group_path,
+        "roi_geojson_path": roi_geojson_path,
+        "sample_name": sample_name,
+        "n_random": n_random,
+        "n_label_shuffles": n_random,
+        "n_spatial_permutations": n_spatial_permutations,
+        "n_bootstrap": n_bootstrap,
+        "min_claim_cells": min_claim_cells,
+        "reference_effect_size_only": True,
+    }
+    results = run_nature_methods_breast_analysis(
+        spatial_input,
+        reference_datasets=datasets,
+        config=config,
+        output_dir=output_dir,
+    )
+    manifest = results.get("manifest", {})
+    typer.echo(f"dataset={manifest.get('dataset', spatial_input)}")
+    typer.echo(f"report_dir={output_dir.resolve()}")
+    typer.echo(f"references={','.join(map(str, manifest.get('reference_datasets', datasets)))}")
+    typer.echo(f"claim_level_rows={manifest.get('summary', {}).get('claim_level_rows', 'NA')}")
 
 
 @app.command("validate")

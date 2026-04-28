@@ -12,6 +12,7 @@ SpatialPerturb 是一个面向 Spatial Transcriptomics + Perturb-seq 工作流�
 - 运行 `intrinsic_de`、`neighbor_de`、`differential_lr`、`platform_concordance`、`power_curve`。
 - 构建 Perturb-seq reference programs，并投影到 unperturbed spatial tissue。
 - 支持 `simple`、`pseudobulk` 和 full-scale reference projection 中的 effect-size-only program ranking。
+- 支持 Nature Methods Brief Communication 风格的 reference validation、null calibration、spatial autocorrelation、ablation 和主图输出。
 - 提供 public dataset lifecycle：`fetch_dataset()`、`prepare_dataset()`、`load_public_dataset()`。
 - 跑 benchmark 并固定导出 tables、figures、manifest 和 biological interpretation。
 
@@ -43,7 +44,7 @@ results = sp.run_core_benchmark(
 - `shen_2026_scrnaseq` -> `GSE274058`
 - `demo_spatialperturb` -> synthetic paired dataset
 
-更多细节见 [Workflow](workflow.md)、[Benchmarks](benchmarks.md)、[Breast Reference Projection](breast-reference-projection.md)、[Paper Repro](paper-repro.md) 和 [API 参考](api.md)。
+更多细节见 [Workflow](workflow.md)、[Benchmarks](benchmarks.md)、[Breast Reference Projection](breast-reference-projection.md)、[Nature Methods Short Communication](nature-methods-shortcomm.md)、[Paper Repro](paper-repro.md) 和 [API 参考](api.md)。
 
 ```{toctree}
 :maxdepth: 1
@@ -52,6 +53,7 @@ results = sp.run_core_benchmark(
 workflow
 benchmarks
 breast-reference-projection
+nature-methods-shortcomm
 paper-repro
 gse274058-reference-results
 api
