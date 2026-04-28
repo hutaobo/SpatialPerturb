@@ -8,6 +8,7 @@ from typing import Any
 
 import anndata as ad
 from anndata import AnnData
+from matplotlib.path import Path as MplPath
 import numpy as np
 import pandas as pd
 from scipy import sparse
@@ -106,6 +107,67 @@ def _read_cells_table(path: Path) -> pd.DataFrame:
     return table
 
 
+def _decode_h5_strings(values: Any) -> list[str]:
+    array = np.asarray(values)
+    output: list[str] = []
+    for value in array:
+        if isinstance(value, bytes):
+            output.append(value.decode("utf-8"))
+        else:
+            output.append(str(value))
+    return output
+
+
+def _read_10x_feature_matrix_h5(matrix_path: Path, *, cells_path: Path | None, platform: str) -> AnnData:
+    try:
+        import h5py
+    except ImportError as exc:
+        raise ImportError("Reading 10x/Xenium H5 matrices requires the h5py package.") from exc
+
+    with h5py.File(matrix_path, "r") as handle:
+        matrix_group = handle["matrix"]
+        shape = tuple(int(value) for value in matrix_group["shape"][()])
+        matrix = sparse.csc_matrix(
+            (
+                matrix_group["data"][()],
+                matrix_group["indices"][()],
+                matrix_group["indptr"][()],
+            ),
+            shape=shape,
+        ).transpose().tocsr()
+        obs_names = pd.Index(_decode_h5_strings(matrix_group["barcodes"][()]), dtype="object")
+        features = matrix_group["features"]
+        gene_names = pd.Index(_decode_h5_strings(features["name"][()]), dtype="object")
+        var = pd.DataFrame(
+            {
+                "feature_id": _decode_h5_strings(features["id"][()]),
+                "feature_type": _decode_h5_strings(features["feature_type"][()]),
+            },
+            index=gene_names,
+        )
+        if "genome" in features:
+            var["genome"] = _decode_h5_strings(features["genome"][()])
+
+    obs = pd.DataFrame(index=obs_names)
+    if cells_path is not None and cells_path.exists():
+        obs = _read_cells_table(cells_path).reindex(obs_names)
+
+    adata = from_tables(
+        matrix,
+        obs=obs,
+        var=var,
+        metadata={
+            "platform": platform,
+            "source_path": str(matrix_path.parent),
+            "matrix_path": str(matrix_path),
+            "cells_path": None if cells_path is None else str(cells_path),
+            "reader": "10x_feature_matrix_h5",
+        },
+    )
+    adata.var_names_make_unique()
+    return adata
+
+
 def _read_platform_directory(path: str | Path, *, platform: str) -> AnnData:
     directory = Path(path).expanduser().resolve()
     if directory.is_file():
@@ -114,10 +176,30 @@ def _read_platform_directory(path: str | Path, *, platform: str) -> AnnData:
             ensure_spatialperturb_schema(adata, metadata={"platform": platform, "source_path": str(directory)})
             validate_spatialperturb_schema(adata)
             return adata
+        if directory.name == "cell_feature_matrix.h5" or directory.suffix == ".h5":
+            cells_path = directory.parent / "cells.csv.gz"
+            if not cells_path.exists():
+                cells_path = directory.parent / "cells.csv"
+            return _read_10x_feature_matrix_h5(
+                directory,
+                cells_path=cells_path if cells_path.exists() else None,
+                platform=platform,
+            )
         raise ValueError(f"Unsupported file input for {platform}: {directory}")
 
     if not directory.exists():
         raise FileNotFoundError(directory)
+
+    feature_matrix_path = directory / "cell_feature_matrix.h5"
+    if feature_matrix_path.exists():
+        cells_path = directory / "cells.csv.gz"
+        if not cells_path.exists():
+            cells_path = directory / "cells.csv"
+        return _read_10x_feature_matrix_h5(
+            feature_matrix_path,
+            cells_path=cells_path if cells_path.exists() else None,
+            platform=platform,
+        )
 
     counts_candidates = [
         directory / "counts.csv",
@@ -183,40 +265,50 @@ def _annotate_cell_groups(adata: AnnData, path: Path) -> None:
     adata.uns["spatialperturb"]["cell_group_annotation"] = {"path": str(path), "matched_cells": matched}
 
 
-def _point_in_polygon(x: float, y: float, polygon: list[list[float]]) -> bool:
-    inside = False
-    j = len(polygon) - 1
-    for i in range(len(polygon)):
-        xi, yi = polygon[i]
-        xj, yj = polygon[j]
-        intersects = ((yi > y) != (yj > y)) and (x < (xj - xi) * (y - yi) / max((yj - yi), 1e-12) + xi)
-        if intersects:
-            inside = not inside
-        j = i
-    return inside
+def _roi_feature_name(feature: dict[str, Any], default: str) -> str:
+    properties = feature.get("properties", {})
+    for key in ("assigned_structure", "name", "label", "group", "roi"):
+        value = properties.get(key)
+        if value is not None and str(value).strip():
+            return str(value)
+    return default
+
+
+def _polygon_outer_rings(geometry: dict[str, Any]) -> list[np.ndarray]:
+    geometry_type = str(geometry.get("type", ""))
+    coordinates = geometry.get("coordinates", [])
+    if geometry_type == "Polygon":
+        return [np.asarray(coordinates[0], dtype=float)] if coordinates else []
+    if geometry_type == "MultiPolygon":
+        return [np.asarray(polygon[0], dtype=float) for polygon in coordinates if polygon]
+    return []
 
 
 def _annotate_roi_geojson(adata: AnnData, path: Path) -> None:
     payload = json.loads(path.read_text(encoding="utf-8"))
     features = payload.get("features", [])
     coords = np.asarray(adata.obsm["spatial"], dtype=float)
-    rois = adata.obs["roi"].astype(str).tolist()
-    matched = 0
-    for idx, (x_coord, y_coord) in enumerate(coords):
-        for feature in features:
-            geometry = feature.get("geometry", {})
-            if geometry.get("type") != "Polygon":
+    rois = np.asarray(adata.obs["roi"].astype(str).tolist(), dtype=object)
+    assigned = np.zeros(adata.n_obs, dtype=bool)
+    for feature_idx, feature in enumerate(features):
+        if not isinstance(feature, dict):
+            continue
+        roi_name = _roi_feature_name(feature, default=f"roi_{feature_idx + 1}")
+        for ring in _polygon_outer_rings(feature.get("geometry", {})):
+            if ring.size == 0:
                 continue
-            rings = geometry.get("coordinates", [])
-            if not rings:
-                continue
-            if _point_in_polygon(float(x_coord), float(y_coord), rings[0]):
-                rois[idx] = str(feature.get("properties", {}).get("assigned_structure", rois[idx]))
-                matched += 1
-                break
-    adata.obs["roi"] = rois
+            mask = MplPath(ring, closed=True).contains_points(coords) & ~assigned
+            rois[mask] = roi_name
+            assigned[mask] = True
+    adata.obs["roi"] = rois.astype(str)
     adata.uns.setdefault("spatialperturb", {})
-    adata.uns["spatialperturb"]["roi_annotation"] = {"path": str(path), "matched_cells": matched}
+    roi_counts = pd.Series(rois, dtype="object").value_counts().sort_index()
+    adata.uns["spatialperturb"]["roi_annotation"] = {
+        "path": str(path),
+        "matched_cells": int(assigned.sum()),
+        "total_cells": int(adata.n_obs),
+        "roi_counts": {str(name): int(count) for name, count in roi_counts.items()},
+    }
 
 
 def read_xenium(
@@ -239,6 +331,8 @@ def read_xenium(
         _annotate_roi_geojson(adata, Path(roi_geojson_path))
     if not load_molecules:
         adata.uns.get("spatialperturb", {}).pop("molecules", None)
+    ensure_spatialperturb_schema(adata, metadata={"platform": "xenium"})
+    validate_spatialperturb_schema(adata)
     return adata
 
 

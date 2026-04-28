@@ -47,6 +47,11 @@ _BENCHMARK_CATALOG = pd.DataFrame(
             "description": "Project reference-derived programs onto a spatial or Xenium dataset and summarize neighborhood context.",
             "required_inputs": "Prepared spatial AnnData plus one or more reference AnnData objects or registered datasets.",
         },
+        {
+            "benchmark": "breast_reference_projection",
+            "description": "Project breast Perturb-seq reference programs onto Xenium WTA breast tissue.",
+            "required_inputs": "Xenium WTA AnnData plus GSE241115 and optionally GSE281048 prepared reference datasets.",
+        },
     ]
 )
 
@@ -430,6 +435,13 @@ def run_reference_projection_benchmark(
             reference = ensure_spatialperturb_schema(reference_adatas[str(dataset_name_ref)].copy())
         else:
             reference = load_public_dataset(str(dataset_name_ref), cache_dir=cache_dir)
+        if str(dataset_name_ref) == "gse281048_pathway_atlas":
+            pathway_cell_line = str(cfg.get("pathway_cell_line", "MCF7"))
+            if "cell_line" not in reference.obs.columns:
+                raise KeyError("gse281048_pathway_atlas requires obs['cell_line'] for MCF7 filtering.")
+            reference = reference[reference.obs["cell_line"].astype(str) == pathway_cell_line].copy()
+            if reference.n_obs == 0:
+                raise ValueError(f"No cells remain after filtering gse281048_pathway_atlas to {pathway_cell_line!r}.")
         reference_objects[str(dataset_name_ref)] = reference
 
         programs, de_results = build_reference_programs(
@@ -519,7 +531,7 @@ def run_reference_projection_benchmark(
             figure_paths["neighbor_program_scores_heatmap"] = neighbor_heatmap_path
 
         manifest = {
-            "benchmark": "reference_projection",
+            "benchmark": "breast_reference_projection",
             "dataset": dataset_name,
             "generated_at": datetime.now(timezone.utc).isoformat(),
             "package_version": _package_version(),
