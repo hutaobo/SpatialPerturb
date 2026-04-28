@@ -394,6 +394,7 @@ def _read_control_counts_table(path: Path, *, sample_name: str, cell_line: str, 
         index=expression.index.astype(str),
     )
     var = pd.DataFrame(index=expression.columns.astype(str))
+    var.index.name = None
     matrix = sparse.csr_matrix(expression.to_numpy(dtype=float))
     adata = from_tables(
         matrix,
@@ -408,6 +409,7 @@ def _read_control_counts_table(path: Path, *, sample_name: str, cell_line: str, 
             "data_origin": "geo_control_counts",
         },
     )
+    adata.var_names_make_unique()
     prefixed = [f"{sample_name}:{barcode}" for barcode in adata.obs_names.astype(str)]
     adata.obs_names = prefixed
     return adata
@@ -439,6 +441,7 @@ def _read_sparse_10x_sample(
         },
         index=gene_names.astype(str),
     )
+    var.index.name = None
     obs = pd.DataFrame(
         {
             "sample": sample_name,
@@ -477,6 +480,7 @@ def _read_sparse_10x_sample(
             "data_origin": "geo_sparse_10x",
         },
     )
+    adata.var_names_make_unique()
     prefixed = [f"{sample_name}:{barcode}" for barcode in adata.obs_names.astype(str)]
     adata.obs_names = prefixed
     return adata
