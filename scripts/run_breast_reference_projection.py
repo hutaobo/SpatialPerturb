@@ -124,6 +124,7 @@ def main() -> None:
             "roi_geojson_path": roi_geojson_path if roi_geojson_path.exists() else None,
             "sample_name": "xenium_wta_breast",
             "pathway_cell_line": "MCF7",
+            "reference_effect_size_only": True,
             "k": 15,
         },
         output_dir=REPORT_DIR,

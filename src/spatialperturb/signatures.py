@@ -10,7 +10,6 @@ from anndata import AnnData
 from scipy.stats import spearmanr
 
 from ._utils import extract_matrix
-from .gr import collect_neighbors
 
 
 def build_signature_matrix(programs: Mapping[str, Sequence[str]]) -> pd.DataFrame:
@@ -103,13 +102,25 @@ def neighbor_program_scores(
 ) -> pd.DataFrame:
     """Average program scores across each cell's neighborhood."""
     scores = _resolve_score_frame(adata, score_key)
-    neighbors = collect_neighbors(adata, graph_key=graph_key, exclude_perturbed=exclude_perturbed)
-    output = pd.DataFrame(0.0, index=adata.obs_names.astype(str), columns=scores.columns.astype(str))
-    for cell, neighbor_names in neighbors.items():
-        if not neighbor_names:
-            continue
-        unique_neighbors = list(dict.fromkeys(map(str, neighbor_names)))
-        output.loc[str(cell)] = scores.loc[unique_neighbors].mean(axis=0).to_numpy(dtype=float)
+    key = graph_key or ("sp_knn" if "sp_knn" in adata.obsp else "sp_radius")
+    if key not in adata.obsp:
+        raise KeyError(f"Spatial graph {key!r} not found in adata.obsp.")
+
+    graph = adata.obsp[key].tocsr(copy=True)
+    graph.data = np.ones(graph.nnz, dtype=float)
+    score_values = scores.to_numpy(dtype=float)
+    if exclude_perturbed:
+        allowed_mask = adata.obs["perturbation_status"].astype(str).to_numpy() == "unassigned"
+        graph = graph[:, allowed_mask]
+        score_values = score_values[allowed_mask, :]
+
+    row_counts = np.asarray(graph.sum(axis=1)).ravel()
+    values = graph @ score_values
+    valid_rows = row_counts > 0
+    values[valid_rows, :] = values[valid_rows, :] / row_counts[valid_rows, None]
+    values[~valid_rows, :] = 0.0
+
+    output = pd.DataFrame(values, index=adata.obs_names.astype(str), columns=scores.columns.astype(str))
     adata.obsm[key_added] = output
     return output
 
@@ -223,6 +234,7 @@ def build_reference_programs(
     direction: str = "both",
     min_cells_per_group: int = 2,
     min_samples_per_group: int = 2,
+    effect_size_only: bool = False,
     cell_type: str | Sequence[str] | None = None,
     roi: str | Sequence[str] | None = None,
     return_de_results: bool = False,
@@ -270,6 +282,7 @@ def build_reference_programs(
                     covariates=covariates,
                     min_cells_per_group=min_cells_per_group,
                     min_samples_per_group=min_samples_per_group,
+                    effect_size_only=effect_size_only,
                     cell_type=cell_type,
                     roi=roi,
                 )

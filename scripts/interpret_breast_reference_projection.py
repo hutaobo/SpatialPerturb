@@ -108,6 +108,7 @@ def interpret_report(report_dir: str | Path, *, top_n: int = 5) -> dict[str, Any
     top_neighbors.to_csv(top_neighbors_path, sep="\t", index=False)
 
     summary = manifest.get("summary", {})
+    config = manifest.get("config", {})
     lines = [
         "# Breast Xenium Reference Projection: Biological Interpretation",
         "",
@@ -146,6 +147,10 @@ def interpret_report(report_dir: str | Path, *, top_n: int = 5) -> dict[str, Any
             "- Programs with broad stress, proliferation, interferon, or extracellular-matrix genes can reflect shared state biology rather than a single upstream regulator.",
         ]
     )
+    if config.get("reference_effect_size_only"):
+        lines.append(
+            "- This run used effect-size-only reference DE for speed on full-scale data; program ranking is based on log2 fold-change, while p-values/FDR in `reference_de.tsv` should not be used for statistical claims."
+        )
     if reference_status:
         blocked = {
             name: payload
