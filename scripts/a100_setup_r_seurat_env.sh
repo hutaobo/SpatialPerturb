@@ -3,6 +3,8 @@ set -euo pipefail
 
 DATA_ROOT="${DATA_ROOT:-/data/taobo.hu/SpatialPerturb}"
 R_ENV_DIR="${R_ENV_DIR:-$DATA_ROOT/envs/r-seurat}"
+MICROMAMBA_DIR="${MICROMAMBA_DIR:-$DATA_ROOT/envs/micromamba}"
+export MAMBA_ROOT_PREFIX="${MAMBA_ROOT_PREFIX:-$DATA_ROOT/envs/micromamba-root}"
 REPORT_DIR="${REPORT_DIR:-$DATA_ROOT/reports/nature_methods_breast_shortcomm}"
 STATUS_PATH="$REPORT_DIR/r_env_status.json"
 
@@ -10,38 +12,34 @@ mkdir -p "$DATA_ROOT/envs" "$REPORT_DIR"
 
 manager=""
 if command -v micromamba >/dev/null 2>&1; then
-  manager="micromamba"
+  manager="$(command -v micromamba)"
 elif command -v mamba >/dev/null 2>&1; then
-  manager="mamba"
+  manager="$(command -v mamba)"
 elif command -v conda >/dev/null 2>&1; then
-  manager="conda"
+  manager="$(command -v conda)"
 fi
 
 if [[ -z "$manager" ]]; then
-  python3 - <<PY
-import json
-from pathlib import Path
-payload = {
-    "status": "blocked",
-    "reason": "CONDA_OR_MICROMAMBA_MISSING",
-    "message": "Neither micromamba, mamba, nor conda is available on PATH.",
-    "r_env_dir": "$R_ENV_DIR",
-}
-Path("$STATUS_PATH").write_text(json.dumps(payload, indent=2), encoding="utf-8")
-print(json.dumps(payload, indent=2))
-PY
-  exit 0
+  mkdir -p "$MICROMAMBA_DIR" "$MAMBA_ROOT_PREFIX"
+  if [[ ! -x "$MICROMAMBA_DIR/bin/micromamba" ]]; then
+    tmp_archive="$(mktemp --suffix=.tar.bz2)"
+    curl -L https://micro.mamba.pm/api/micromamba/linux-64/latest -o "$tmp_archive"
+    tar -xjf "$tmp_archive" -C "$MICROMAMBA_DIR" bin/micromamba
+    rm -f "$tmp_archive"
+  fi
+  manager="$MICROMAMBA_DIR/bin/micromamba"
 fi
 
 if [[ ! -x "$R_ENV_DIR/bin/Rscript" ]]; then
-  if [[ "$manager" == "micromamba" ]]; then
-    micromamba create -y -p "$R_ENV_DIR" -c conda-forge -c bioconda \
+  manager_name="$(basename "$manager")"
+  if [[ "$manager_name" == "micromamba" ]]; then
+    "$manager" create -y -p "$R_ENV_DIR" -c conda-forge -c bioconda \
       r-base=4.3 r-seurat r-seuratobject r-matrix r-jsonlite
-  elif [[ "$manager" == "mamba" ]]; then
-    mamba create -y -p "$R_ENV_DIR" -c conda-forge -c bioconda \
+  elif [[ "$manager_name" == "mamba" ]]; then
+    "$manager" create -y -p "$R_ENV_DIR" -c conda-forge -c bioconda \
       r-base=4.3 r-seurat r-seuratobject r-matrix r-jsonlite
   else
-    conda create -y -p "$R_ENV_DIR" -c conda-forge -c bioconda \
+    "$manager" create -y -p "$R_ENV_DIR" -c conda-forge -c bioconda \
       r-base=4.3 r-seurat r-seuratobject r-matrix r-jsonlite
   fi
 fi
@@ -63,6 +61,8 @@ payload = {
     "status": "$status",
     "reason": "$reason",
     "manager": "$manager",
+    "micromamba_dir": "$MICROMAMBA_DIR",
+    "mamba_root_prefix": "$MAMBA_ROOT_PREFIX",
     "r_env_dir": "$R_ENV_DIR",
     "rscript": "$R_ENV_DIR/bin/Rscript",
     "message": """$message""",
