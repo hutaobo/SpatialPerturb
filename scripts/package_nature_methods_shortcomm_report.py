@@ -90,8 +90,10 @@ def _candidate_rows(rows: list[dict[str, str]]) -> list[dict[str, str]]:
     return sorted(ready, key=lambda row: _float_value(row.get("z_score", "0")), reverse=True)[:8]
 
 
-def package_report(report_dir: str | Path) -> Path:
+def package_report(report_dir: str | Path, output_dir: str | Path | None = None) -> Path:
     root = Path(report_dir).expanduser().resolve()
+    output_root = Path(output_dir).expanduser().resolve() if output_dir is not None else root
+    output_root.mkdir(parents=True, exist_ok=True)
     manifest_path = root / "manifest.json"
     manifest = json.loads(manifest_path.read_text(encoding="utf-8")) if manifest_path.exists() else {}
     tables = root / "tables"
@@ -129,6 +131,18 @@ def package_report(report_dir: str | Path) -> Path:
         "## Figure Language Guardrail",
         f"- Use `candidate spatial programs`, `reference-like states` and `ranked calibrated projections`; avoid discovery language because the best calibrated global FDR is approximately `{min_fdr:.3g}`.",
         f"- Full source data retain all `{program_count}` programs, bootstrap confidence intervals, ablations, redundancy and FDR values for supplementary or Extended Data.",
+        "",
+        "## Figure Legend Drafts",
+        (
+            "Figure 1. SpatialPerturb projects perturbation programs from GSE241115 and GSE281048 onto Xenium WTA breast tissue. "
+            "The validation panels show held-out recovery, null calibration and ablation robustness for 268 programs, including 218 MCF7 pathway programs from GSE281048. "
+            f"The calibrated projections are ranked candidate programs because the best global FDR is approximately {min_fdr:.3g}."
+        ),
+        (
+            "Figure 2. Selected ranked candidate spatial programs localize to interpretable breast tissue contexts, including Mast-cell FOS, basal-like structured DCIS CEBPB, "
+            "dendritic SP1/MTOR/RPS6KB1/MAPK3, luminal-like amorphous DCIS PTGS2, invasive-associated CAF MAPK8 and mitotic invasive tumor IFNAR1/TYK2. "
+            "These labels indicate Perturb-seq reference-like transcriptional states, not observed genetic perturbations or drug actions in the tissue."
+        ),
         "",
         "## Key Results",
     ]
@@ -170,7 +184,7 @@ def package_report(report_dir: str | Path) -> Path:
             f"- Figures: `{', '.join(manifest.get('figures', {}).keys())}`",
         ]
     )
-    output = root / "nature_methods_shortcomm_scaffold.md"
+    output = output_root / "nature_methods_shortcomm_scaffold.md"
     output.write_text("\n".join(lines) + "\n", encoding="utf-8")
     return output
 
@@ -178,8 +192,9 @@ def package_report(report_dir: str | Path) -> Path:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--report-dir", default="/data/taobo.hu/SpatialPerturb/reports/nature_methods_breast_shortcomm")
+    parser.add_argument("--output-dir", default=None)
     args = parser.parse_args()
-    path = package_report(args.report_dir)
+    path = package_report(args.report_dir, output_dir=args.output_dir)
     print(path)
 
 
