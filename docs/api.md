@@ -60,6 +60,13 @@
    :members:
 ```
 
+## 投稿级 FigureKit
+
+```{eval-rst}
+.. automodule:: spatialperturb.figurekit
+   :members:
+```
+
 ## 绘图与 CLI
 
 ```{eval-rst}

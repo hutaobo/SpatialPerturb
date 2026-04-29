@@ -21,6 +21,13 @@ from .datasets import (
     load_public_dataset,
     prepare_dataset,
 )
+from .figurekit import (
+    PanelSpec,
+    dense_spatial_scatter,
+    render_nature_methods_panels,
+    save_panel,
+    set_publication_rcparams,
+)
 from .gr import build_spatial_graph, collect_neighbors
 from .io import from_tables, read_stereoseq, read_xenium
 from .pp import assign_perturbations, qc_perturbations
@@ -50,6 +57,7 @@ from .tl import differential_lr, intrinsic_de, neighbor_de, platform_concordance
 
 benchmarks = importlib.import_module(".benchmarks", __name__)
 datasets = importlib.import_module(".datasets", __name__)
+figurekit = importlib.import_module(".figurekit", __name__)
 gr = importlib.import_module(".gr", __name__)
 io = importlib.import_module(".io", __name__)
 pl = importlib.import_module(".pl", __name__)
@@ -62,6 +70,7 @@ tl = importlib.import_module(".tl", __name__)
 __all__ = [
     "__version__",
     "DEFAULT_OBS_VALUES",
+    "PanelSpec",
     "REQUIRED_OBS_COLUMNS",
     "SpatialPerturbSchemaError",
     "aggregate_program_scores",
@@ -77,10 +86,12 @@ __all__ = [
     "collect_neighbors",
     "compare_program_concordance",
     "datasets",
+    "dense_spatial_scatter",
     "derive_perturbation_programs",
     "differential_lr",
     "ensure_spatialperturb_schema",
     "fetch_dataset",
+    "figurekit",
     "from_tables",
     "get_dataset_card",
     "gr",
@@ -100,13 +111,16 @@ __all__ = [
     "read_stereoseq",
     "read_xenium",
     "render_paper_figures",
+    "render_nature_methods_panels",
     "reports",
+    "save_panel",
     "run_core_benchmark",
     "run_cross_platform_benchmark",
     "run_nature_methods_breast_analysis",
     "run_reference_projection_benchmark",
     "schema",
     "score_programs",
+    "set_publication_rcparams",
     "signatures",
     "spatial_autocorrelation_scores",
     "tl",

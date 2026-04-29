@@ -731,6 +731,23 @@ def _resolve_publication_scores(adata: AnnData) -> pd.DataFrame:
     return pd.DataFrame(raw, index=adata.obs_names.astype(str))
 
 
+def _publication_claim_rows(calibrated: pd.DataFrame) -> pd.DataFrame:
+    if calibrated.empty:
+        return pd.DataFrame()
+    claims = calibrated.copy()
+    if "is_claim_level" in claims.columns:
+        if pd.api.types.is_bool_dtype(claims["is_claim_level"]):
+            mask = claims["is_claim_level"].fillna(False).astype(bool)
+        else:
+            mask = claims["is_claim_level"].astype(str).str.lower().isin({"1", "true", "t", "yes"})
+        claims = claims.loc[mask].copy()
+    if "claim_status" in claims.columns:
+        claims = claims.loc[claims["claim_status"].astype(str).eq("claim_ready")].copy()
+    if not claims.empty:
+        claims = claims.sort_values(["z_score", "mean_score"], ascending=[False, False])
+    return claims
+
+
 def _write_nature_methods_summary(
     path: Path,
     *,
@@ -751,14 +768,17 @@ def _write_nature_methods_summary(
         f"- Reference datasets: `{', '.join(map(str, manifest.get('reference_datasets', [])))}`.",
         f"- Program count: `{manifest.get('summary', {}).get('program_count', 'NA')}`.",
         "",
-        "## Claim-Level Biological Readout",
+        "## Ranked Candidate Biological Readout",
     ]
     if top_claims.empty:
-        lines.append("- No claim-level calibrated groups passed the minimum-cell filter.")
+        lines.append("- No calibrated candidate groups passed the minimum-cell filter.")
     else:
+        min_fdr = float(top_claims["fdr"].astype(float).min()) if "fdr" in top_claims.columns else float("nan")
+        if np.isfinite(min_fdr):
+            lines.append(f"- Best global calibrated FDR is `{min_fdr:.3g}`; these rows are ranked candidate programs, not formal discoveries.")
         for row in top_claims.head(10).itertuples(index=False):
             lines.append(
-                f"- `{row.group}` resembles `{row.program}` "
+                f"- `{row.group}` shows candidate similarity to `{row.program}` "
                 f"(mean={float(row.mean_score):.4g}, z={float(row.z_score):.3g}, FDR={float(row.fdr):.3g}, n={int(row.n_cells)})."
             )
     if reference_status:
@@ -770,9 +790,9 @@ def _write_nature_methods_summary(
         [
             "",
             "## Interpretation Guardrails",
-            "- Projection scores indicate transcriptional similarity to a Perturb-seq-derived program, not a real perturbation in the tissue.",
-            "- Cell-line references and FFPE Xenium tissue differ in context; claims should be framed as candidate regulatory-state hypotheses.",
-            "- Small ROI/cell-type groups are retained in supplementary tables but excluded from claim-level summaries.",
+            "- Projection scores indicate Perturb-seq reference-like transcriptional states, not real perturbations or drug actions in the tissue.",
+            "- Cell-line references and FFPE Xenium tissue differ in context; results should be framed as candidate regulatory-state hypotheses.",
+            "- Small ROI/cell-type groups are retained in supplementary tables but excluded from ranked candidate summaries.",
         ]
     )
     path.write_text("\n".join(lines) + "\n", encoding="utf-8")
@@ -785,18 +805,16 @@ def _write_publication_biological_interpretation(
     spatial_stats: pd.DataFrame,
     reference_status: Mapping[str, Any],
 ) -> None:
-    claims = calibrated.loc[calibrated.get("is_claim_level", False)].copy() if not calibrated.empty else pd.DataFrame()
-    if not claims.empty:
-        claims = claims.sort_values(["z_score", "mean_score"], ascending=[False, False])
+    claims = _publication_claim_rows(calibrated)
     lines = [
         "# Biological Interpretation",
         "",
-        "The strongest calibrated signals should be interpreted as spatial localization of Perturb-seq reference-like transcriptional states. They do not show that the Xenium tissue contains the corresponding knockout, CRISPRi perturbation, or drug treatment.",
+        "The strongest calibrated signals should be interpreted as spatial localization of Perturb-seq reference-like transcriptional states. Projection does not show that the Xenium tissue contains the corresponding knockout, CRISPRi perturbation, pathway intervention, or drug treatment.",
         "",
-        "## Main Finding",
+        "## Ranked Candidate States",
     ]
     if claims.empty:
-        lines.append("- No calibrated claim-level group was available after applying the minimum-cell filter.")
+        lines.append("- No calibrated candidate group was available after applying the minimum-cell filter.")
     else:
         for row in claims.head(12).itertuples(index=False):
             program = str(row.program)
@@ -806,14 +824,14 @@ def _write_publication_biological_interpretation(
                 meaning = "cytokine or pathway-response similarity that may localize inflammatory or stromal microenvironments."
             else:
                 meaning = "reference perturbation-associated transcriptional-state similarity."
-            lines.append(f"- `{row.group}`: `{program}` (z={float(row.z_score):.3g}, FDR={float(row.fdr):.3g}, n={int(row.n_cells)}), interpreted as {meaning}")
+            lines.append(f"- `{row.group}`: `{program}` (z={float(row.z_score):.3g}, FDR={float(row.fdr):.3g}, n={int(row.n_cells)}), interpreted as a ranked candidate {meaning}")
     if not spatial_stats.empty:
         lines.extend(["", "## Spatial Organization"])
         for row in spatial_stats.sort_values("moran_i", ascending=False).head(8).itertuples(index=False):
             lines.append(f"- `{row.program}` has Moran-style spatial autocorrelation `{float(row.moran_i):.3g}` (FDR={float(row.fdr):.3g}), supporting local organization of the state.")
     blocked = {name: payload for name, payload in reference_status.items() if isinstance(payload, Mapping) and payload.get("status") == "blocked"}
     if blocked:
-        lines.extend(["", "## Blocked Optional References"])
+        lines.extend(["", "## Unavailable Secondary References"])
         for name, payload in blocked.items():
             lines.append(f"- `{name}`: `{payload.get('reason', 'blocked')}`; {payload.get('message', '')}")
     lines.extend(
@@ -821,7 +839,7 @@ def _write_publication_biological_interpretation(
             "",
             "## Caveats",
             "- GSE241115 and GSE281048 are cell-line references; the query is FFPE breast tissue.",
-            "- Projection is an association-style score and should motivate validation rather than serve as causal proof.",
+            "- Projection is an association-style score and should motivate validation rather than serve as causal proof of perturbation or drug action.",
             "- ROI and cell-group annotation quality directly shapes all biological conclusions.",
         ]
     )
@@ -841,16 +859,16 @@ def _render_nature_methods_figures(
     figures_dir = output_dir / "figures"
     figures_dir.mkdir(parents=True, exist_ok=True)
     figure_paths: dict[str, str] = {}
-    claims = calibrated.loc[calibrated["n_cells"] >= int(min_cells)].copy() if not calibrated.empty else pd.DataFrame()
-    if not claims.empty:
-        claims = claims.sort_values(["z_score", "mean_score"], ascending=[False, False])
+    claims = _publication_claim_rows(calibrated)
+    if not claims.empty and "n_cells" in claims.columns:
+        claims = claims.loc[claims["n_cells"].astype(int) >= int(min_cells)].copy()
 
     fig, axes = plt.subplots(2, 2, figsize=(11, 8))
     axes[0, 0].axis("off")
     axes[0, 0].text(
         0.02,
         0.96,
-        "SpatialPerturb\nPerturb-seq reference programs -> Xenium WTA tissue\nnull calibration + held-out validation + spatial graph statistics",
+        "SpatialPerturb\nPerturb-seq reference programs -> Xenium WTA tissue\nranked calibrated projections + held-out validation + spatial graph statistics",
         va="top",
         ha="left",
         fontsize=12,
@@ -866,11 +884,11 @@ def _render_nature_methods_figures(
         axes[0, 1].text(0.1, 0.5, "Reference validation unavailable")
     if not claims.empty:
         axes[1, 0].hist(claims["z_score"].astype(float), bins=30, color="#F58518", alpha=0.85)
-        axes[1, 0].set_title("Null-calibrated claim-level z scores")
+        axes[1, 0].set_title("Null-calibrated candidate z scores")
         axes[1, 0].set_xlabel("Empirical z")
     else:
         axes[1, 0].axis("off")
-        axes[1, 0].text(0.1, 0.5, "No claim-level calibrated scores")
+        axes[1, 0].text(0.1, 0.5, "No calibrated candidate scores")
     if not spatial_stats.empty:
         plot = spatial_stats.sort_values("moran_i", ascending=False).head(12)
         sns.barplot(data=plot, x="moran_i", y="program", ax=axes[1, 1], color="#54A24B")
@@ -912,10 +930,10 @@ def _render_nature_methods_figures(
             aggfunc="mean",
         )
         sns.heatmap(heatmap.fillna(0), cmap="vlag", center=0, ax=axes[0, 1])
-        axes[0, 1].set_title("Claim-level calibrated enrichment")
+        axes[0, 1].set_title("Ranked calibrated candidate programs")
     else:
         axes[0, 1].axis("off")
-        axes[0, 1].text(0.1, 0.5, "No claim-level heatmap")
+        axes[0, 1].text(0.1, 0.5, "No candidate-program heatmap")
 
     if not spatial_stats.empty:
         plot = spatial_stats.sort_values("moran_i", ascending=False).head(10)
@@ -930,7 +948,7 @@ def _render_nature_methods_figures(
         plot = claims.head(12).copy()
         plot["label"] = plot["program"].astype(str).str.split(":", n=1).str[-1]
         sns.barplot(data=plot, x="z_score", y="label", ax=axes[1, 1], color="#E45756")
-        axes[1, 1].set_title("Top robust biological programs")
+        axes[1, 1].set_title("Top ranked biological candidates")
     else:
         axes[1, 1].axis("off")
     fig.tight_layout()
@@ -1074,9 +1092,12 @@ def run_nature_methods_breast_analysis(
         min_cells=int(cfg.get("min_claim_cells", 50)),
         seed=int(cfg.get("seed", 0)),
     )
-    top_claims = calibrated.loc[calibrated["n_cells"] >= int(cfg.get("min_claim_cells", 50))].sort_values(
-        ["z_score", "mean_score"], ascending=[False, False]
-    )
+    top_claims = _publication_claim_rows(calibrated)
+    if not top_claims.empty and "n_cells" in top_claims.columns:
+        top_claims = top_claims.loc[
+            pd.to_numeric(top_claims["n_cells"], errors="coerce").fillna(0).astype(int)
+            >= int(cfg.get("min_claim_cells", 50))
+        ].copy()
 
     manifest = {
         "benchmark": "nature_methods_breast_shortcomm",
